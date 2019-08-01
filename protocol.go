@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -37,15 +37,16 @@ const MSG_HEADER_SIZE = 12
 
 var message_descriptions map[int]string = make(map[int]string)
 
-type MessageCreator func()IMessage
+type MessageCreator func() IMessage
+
 var message_creators map[int]MessageCreator = make(map[int]MessageCreator)
 
-type VersionMessageCreator func()IVersionMessage
+type VersionMessageCreator func() IVersionMessage
+
 var vmessage_creators map[int]VersionMessageCreator = make(map[int]VersionMessageCreator)
 
 //true client->server
-var external_messages [256]bool;
-
+var external_messages [256]bool
 
 func WriteHeader(len int32, seq int32, cmd byte, version byte, flag byte, buffer io.Writer) {
 	binary.Write(buffer, binary.BigEndian, len)
@@ -108,7 +109,7 @@ func ReceiveLimitMessage(conn io.Reader, limit_size int, external bool) *Message
 		log.Warning("invalid external message cmd:", Command(cmd))
 		return nil
 	}
-	
+
 	buff = make([]byte, length)
 	_, err = io.ReadFull(conn, buff)
 	if err != nil {
@@ -129,7 +130,6 @@ func ReceiveLimitMessage(conn io.Reader, limit_size int, external bool) *Message
 	return message
 }
 
-
 func ReceiveMessage(conn io.Reader) *Message {
 	return ReceiveLimitMessage(conn, 32*1024, false)
 }
@@ -143,5 +143,3 @@ func ReceiveClientMessage(conn io.Reader) *Message {
 func ReceiveStorageSyncMessage(conn io.Reader) *Message {
 	return ReceiveLimitMessage(conn, 32*1024*1024, false)
 }
-
-

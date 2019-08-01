@@ -16,7 +16,6 @@ const REDIS_HOST = "127.0.0.1:6379"
 const REDIS_PASSWORD = ""
 const REDIS_DB = 0
 
-
 var first int64
 var last int64
 var local_ip string
@@ -33,14 +32,13 @@ func init() {
 	flag.IntVar(&port, "port", 23000, "port")
 }
 
-
 func NewRedisPool(server, password string, db int) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     100,
 		MaxActive:   500,
 		IdleTimeout: 480 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			timeout := time.Duration(2)*time.Second
+			timeout := time.Duration(2) * time.Second
 			c, err := redis.DialTimeout("tcp", server, timeout, 0, 0)
 			if err != nil {
 				return nil, err
@@ -62,12 +60,10 @@ func NewRedisPool(server, password string, db int) *redis.Pool {
 	}
 }
 
-
-
 func GenerateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := cryptorand.Read(b)
-    // Note that err == nil only if we read len(b) bytes.
+	// Note that err == nil only if we read len(b) bytes.
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +76,7 @@ func GenerateRandomString(s int) (string, error) {
 	return base64.URLEncoding.EncodeToString(b), err
 }
 
-
-
-func SaveUserAccessToken(token string, appid int64, uid int64) (error) {
+func SaveUserAccessToken(token string, appid int64, uid int64) error {
 	conn := redis_pool.Get()
 	defer conn.Close()
 
@@ -90,13 +84,12 @@ func SaveUserAccessToken(token string, appid int64, uid int64) (error) {
 
 	_, err := conn.Do("HMSET", key, "user_id", uid, "app_id", appid)
 	if err != nil {
-		return err		
+		return err
 	}
 
 	_, err = conn.Do("EXPIRE", key, 60*60)
 	return err
 }
-
 
 func receive(uid int64) {
 	ip := net.ParseIP(host)
@@ -112,19 +105,18 @@ func receive(uid int64) {
 		return
 	}
 
-
 	token, err := GenerateRandomString(32)
 	if err != nil {
 		log.Panicln("err:", err)
 	}
-	
+
 	err = SaveUserAccessToken(token, APPID, uid)
 	if err != nil {
 		log.Panicln("redis err:", err)
 	}
-	
+
 	seq := 1
-	SendMessage(conn, &Message{MSG_AUTH_TOKEN, seq, DEFAULT_VERSION, 0, &AuthenticationToken{token: token, platform_id:PLATFORM_WEB, device_id:"1"}})
+	SendMessage(conn, &Message{MSG_AUTH_TOKEN, seq, DEFAULT_VERSION, 0, &AuthenticationToken{token: token, platform_id: PLATFORM_WEB, device_id: "1"}})
 	ReceiveMessage(conn)
 
 	q := make(chan bool, 10)
@@ -199,7 +191,7 @@ func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 
 	redis_pool = NewRedisPool(REDIS_HOST, REDIS_PASSWORD, REDIS_DB)
-	
+
 	c := make(chan bool, 100)
 	var i int64
 	var j int64

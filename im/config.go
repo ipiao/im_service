@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,41 +27,41 @@ import "github.com/richmonkey/cfg"
 const DEFAULT_GROUP_DELIVER_COUNT = 4
 
 type Config struct {
-	port                int
-	ssl_port            int
-	mysqldb_datasource  string
-	mysqldb_appdatasource  string
-	pending_root        string
-	
-	kefu_appid          int64
+	port                  int
+	ssl_port              int
+	mysqldb_datasource    string
+	mysqldb_appdatasource string
+	pending_root          string
 
-	redis_address       string
-	redis_password      string
-	redis_db            int
+	kefu_appid int64
+
+	redis_address  string
+	redis_password string
+	redis_db       int
 
 	http_listen_address string
 	rpc_listen_address  string
-	
+
 	//engine io listen address
 	//todo remove engine io
-	socket_io_address   string
-	tls_address         string
-	
-	cert_file           string
-	key_file            string
+	socket_io_address string
+	tls_address       string
+
+	cert_file string
+	key_file  string
 
 	//websocket listen address
-	ws_address          string
-	wss_address         string
+	ws_address  string
+	wss_address string
 
-	storage_rpc_addrs   []string
-	group_storage_rpc_addrs   []string	
-	route_addrs         []string
-	group_route_addrs   []string //可选配置项， 超群群的route server
+	storage_rpc_addrs       []string
+	group_storage_rpc_addrs []string
+	route_addrs             []string
+	group_route_addrs       []string //可选配置项， 超级群的route server
 
-	group_deliver_count int //群组消息投递并发数量,默认4
+	group_deliver_count int    //群组消息投递并发数量,默认4
 	word_file           string //关键词字典文件
-	sync_self           bool //是否同步自己发送的消息
+	sync_self           bool   //是否同步自己发送的消息
 }
 
 func get_int(app_cfg map[string]string, key string) int {
@@ -87,7 +87,6 @@ func get_opt_int(app_cfg map[string]string, key string) int64 {
 	}
 	return n
 }
-
 
 func get_string(app_cfg map[string]string, key string) string {
 	concurrency, present := app_cfg[key]
@@ -129,15 +128,14 @@ func read_cfg(cfg_path string) *Config {
 
 	config.ws_address = get_string(app_cfg, "ws_address")
 	config.wss_address = get_opt_string(app_cfg, "wss_address")
-	
+
 	config.cert_file = get_opt_string(app_cfg, "cert_file")
 	config.key_file = get_opt_string(app_cfg, "key_file")
 
-	
 	config.kefu_appid = get_opt_int(app_cfg, "kefu_appid")
 
 	str := get_string(app_cfg, "storage_rpc_pool")
-    array := strings.Split(str, " ")
+	array := strings.Split(str, " ")
 	config.storage_rpc_addrs = array
 	if len(config.storage_rpc_addrs) == 0 {
 		log.Fatal("storage pool config")
@@ -147,18 +145,18 @@ func read_cfg(cfg_path string) *Config {
 	if str != "" {
 		array = strings.Split(str, " ")
 		config.group_storage_rpc_addrs = array
-		//check repeat 
+		//check repeat
 		for _, addr := range config.group_storage_rpc_addrs {
 			for _, addr2 := range config.storage_rpc_addrs {
 				if addr == addr2 {
 					log.Fatal("stroage and group storage address repeat")
 				}
 			}
-		}		
+		}
 	}
-	
+
 	str = get_string(app_cfg, "route_pool")
-    array = strings.Split(str, " ")
+	array = strings.Split(str, " ")
 	config.route_addrs = array
 	if len(config.route_addrs) == 0 {
 		log.Fatal("route pool config")

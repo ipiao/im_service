@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,7 +33,7 @@ func (client *RoomClient) Logout() {
 		channel := GetRoomChannel(client.room_id)
 		channel.UnsubscribeRoom(client.appid, client.room_id)
 		route := app_route.FindOrAddRoute(client.appid)
-		route.RemoveRoomClient(client.room_id, client.Client())		
+		route.RemoveRoomClient(client.room_id, client.Client())
 	}
 }
 
@@ -48,7 +48,7 @@ func (client *RoomClient) HandleMessage(msg *Message) {
 	}
 }
 
-func (client *RoomClient) HandleEnterRoom(room *Room){
+func (client *RoomClient) HandleEnterRoom(room *Room) {
 	if client.uid == 0 {
 		log.Warning("client has't been authenticated")
 		return
@@ -111,23 +111,23 @@ func (client *RoomClient) HandleRoomIM(room_im *RoomMessage, seq int) {
 		return
 	}
 
-	fb := atomic.LoadInt32(&client.forbidden) 
-	if (fb == 1) {
+	fb := atomic.LoadInt32(&client.forbidden)
+	if fb == 1 {
 		log.Infof("room id:%d client:%d, %d is forbidden", room_id, client.appid, client.uid)
 		return
 	}
 
-	m := &Message{cmd:MSG_ROOM_IM, body:room_im}
+	m := &Message{cmd: MSG_ROOM_IM, body: room_im}
 	route := app_route.FindOrAddRoute(client.appid)
 	clients := route.FindRoomClientSet(room_id)
-	for c, _ := range(clients) {
+	for c, _ := range clients {
 		if c == client.Client() {
 			continue
 		}
 		c.EnqueueNonBlockMessage(m)
 	}
 
-	amsg := &AppMessage{appid:client.appid, receiver:room_id, msg:m}
+	amsg := &AppMessage{appid: client.appid, receiver: room_id, msg: m}
 	channel := GetRoomChannel(client.room_id)
 	channel.PublishRoom(amsg)
 

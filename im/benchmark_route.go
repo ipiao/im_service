@@ -18,7 +18,7 @@ func main() {
 
 	channel1.Subscribe(appid, 1000, true)
 
-	time.Sleep(1*time.Second)
+	time.Sleep(1 * time.Second)
 
 	channel2 := NewChannel(route_addr, Dispatch, nil, nil)
 	channel2.Start()
@@ -27,7 +27,7 @@ func main() {
 	im.sender = 1
 	im.receiver = 1000
 	im.content = "test"
-	msg := &Message{cmd:MSG_IM, body:im}
+	msg := &Message{cmd: MSG_IM, body: im}
 
 	amsg := &AppMessage{}
 	amsg.appid = appid
@@ -35,9 +35,9 @@ func main() {
 	amsg.msg = msg
 	channel2.Publish(amsg)
 
-	time.Sleep(3*time.Second)
+	time.Sleep(3 * time.Second)
 
 	channel1.Unsubscribe(appid, 1000, true)
 
-	time.Sleep(1*time.Second)
+	time.Sleep(1 * time.Second)
 }

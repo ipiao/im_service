@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,12 +20,13 @@
 package main
 
 import (
+	"bytes"
+	"io/ioutil"
+	"net/http"
+
 	log "github.com/golang/glog"
 	"github.com/googollee/go-engine.io"
 	"github.com/gorilla/websocket"
-	"io/ioutil"
-	"net/http"
-	"bytes"
 )
 
 type SIOServer struct {
@@ -46,15 +47,14 @@ func (s *SIOServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s.server.ServeHTTP(w, req)
 }
 
-
-func StartSocketIO(address string, tls_address string, 
+func StartSocketIO(address string, tls_address string,
 	cert_file string, key_file string) {
-	
+
 	server, err := engineio.NewServer(nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	go func() {
 		for {
 			conn, err := server.Accept()
@@ -126,9 +126,6 @@ func ReadBinaryMesage(b []byte) *Message {
 	return ReceiveClientMessage(reader)
 }
 
-
-
-
 //websocket server
 
 func CheckOrigin(r *http.Request) bool {
@@ -139,7 +136,7 @@ func CheckOrigin(r *http.Request) bool {
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin:CheckOrigin,
+	CheckOrigin:     CheckOrigin,
 }
 
 func ServeWebsocket(w http.ResponseWriter, r *http.Request) {
@@ -148,12 +145,12 @@ func ServeWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Error("upgrade err:", err)
 		return
 	}
-	conn.SetReadLimit(64*1024)
+	conn.SetReadLimit(64 * 1024)
 	conn.SetPongHandler(func(string) error {
 		log.Info("brower websocket pong...")
 		return nil
 	})
-	
+
 	client := NewClient(conn)
 	client.Run()
 }
@@ -176,7 +173,6 @@ func StartWSServer(address string, tls_address string, cert_file string, key_fil
 		log.Fatalf("listen err:%s", err)
 	}
 }
-
 
 func ReadWebsocketMessage(conn *websocket.Conn) *Message {
 	messageType, p, err := conn.ReadMessage()

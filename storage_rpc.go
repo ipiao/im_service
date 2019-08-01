@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,30 +20,30 @@
 package main
 
 type PeerMessage struct {
-	AppID     int64
-	Uid       int64
-	DeviceID  int64
-	Cmd       int32
-	Raw       []byte
+	AppID    int64
+	Uid      int64
+	DeviceID int64
+	Cmd      int32
+	Raw      []byte
 }
 
 type GroupMessage struct {
-	AppID     int64
-	GroupID   int64
-	DeviceID  int64
-	Cmd       int32
-	Raw       []byte
+	AppID    int64
+	GroupID  int64
+	DeviceID int64
+	Cmd      int32
+	Raw      []byte
 }
 
 type HistoryMessage struct {
-	MsgID     int64
-	DeviceID  int64   //消息发送者所在的设备ID
-	Cmd       int32
-	Raw       []byte
+	MsgID    int64
+	DeviceID int64 //消息发送者所在的设备ID
+	Cmd      int32
+	Raw      []byte
 }
 
 type PeerHistoryMessage struct {
-	Messages []*HistoryMessage
+	Messages  []*HistoryMessage
 	LastMsgID int64
 	HasMore   bool
 }
@@ -67,16 +67,16 @@ type SyncGroupHistory struct {
 }
 
 type HistoryRequest struct {
-	AppID     int64
-	Uid       int64
-	Limit     int32
+	AppID int64
+	Uid   int64
+	Limit int32
 }
 
 func SyncMessageInterface(addr string, sync_key *SyncHistory) *PeerHistoryMessage {
 	return nil
 }
 
-func SyncGroupMessageInterface(addr string , sync_key *SyncGroupHistory) *GroupHistoryMessage {
+func SyncGroupMessageInterface(addr string, sync_key *SyncGroupHistory) *GroupHistoryMessage {
 	return nil
 }
 

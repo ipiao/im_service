@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -43,7 +43,7 @@ func (app_route *AppRoute) FindOrAddRoute(appid int64) *Route {
 	return route
 }
 
-func (app_route *AppRoute) FindRoute(appid int64) *Route{
+func (app_route *AppRoute) FindRoute(appid int64) *Route {
 	app_route.mutex.Lock()
 	defer app_route.mutex.Unlock()
 	return app_route.apps[appid]
@@ -60,7 +60,7 @@ func (app_route *AppRoute) GetUsers() map[int64]IntSet {
 	defer app_route.mutex.Unlock()
 
 	r := make(map[int64]IntSet)
-	for appid, route := range(app_route.apps) {
+	for appid, route := range app_route.apps {
 		uids := route.GetUserIDs()
 		r[appid] = uids
 	}

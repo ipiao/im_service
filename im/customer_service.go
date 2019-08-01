@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -35,9 +35,9 @@ type Store struct {
 }
 
 type CustomerService struct {
-	mutex sync.Mutex
-	stores map[int64]*Store
-	sellers map[int64]int //销售员 sellerid:timestamp
+	mutex          sync.Mutex
+	stores         map[int64]*Store
+	sellers        map[int64]int //销售员 sellerid:timestamp
 	online_sellers map[int64]int //在线的销售员 sellerid:timestamp
 }
 
@@ -131,7 +131,7 @@ func (cs *CustomerService) IsExist(store_id int64, seller_id int64) bool {
 	now := int(time.Now().Unix())
 	cs.mutex.Lock()
 	if t, ok := cs.sellers[seller_id]; ok {
-		if now - t < 10*60 {
+		if now-t < 10*60 {
 			cs.mutex.Unlock()
 			return true
 		}
@@ -140,7 +140,6 @@ func (cs *CustomerService) IsExist(store_id int64, seller_id int64) bool {
 	}
 	cs.mutex.Unlock()
 
-	
 	conn := redis_pool.Get()
 	defer conn.Close()
 
@@ -173,7 +172,7 @@ func (cs *CustomerService) GetSellerID(store_id int64) int64 {
 		return 0
 	}
 	return staff_id
-	
+
 }
 
 func (cs *CustomerService) GetOrderSellerID(store_id int64) int64 {
@@ -196,13 +195,13 @@ func (cs *CustomerService) GetOrderSellerID(store_id int64) int64 {
 		return 0
 	}
 
+	// 记次的同时把id排到后面去
 	_, err = conn.Do("ZINCRBY", key, 1, seller_id)
 	if err != nil {
 		log.Error("zincrby err:", err)
 	}
 	return seller_id
 }
-
 
 //随机获取一个在线的销售人员
 func (cs *CustomerService) GetOnlineSellerID(store_id int64) int64 {
@@ -223,7 +222,7 @@ func (cs *CustomerService) IsOnline(store_id int64, seller_id int64) bool {
 	now := int(time.Now().Unix())
 	cs.mutex.Lock()
 	if t, ok := cs.online_sellers[seller_id]; ok {
-		if now - t < 10*60 {
+		if now-t < 10*60 {
 			cs.mutex.Unlock()
 			return true
 		}
@@ -234,8 +233,8 @@ func (cs *CustomerService) IsOnline(store_id int64, seller_id int64) bool {
 
 	conn := redis_pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("stores_online_seller_%d", store_id)	
-	
+	key := fmt.Sprintf("stores_online_seller_%d", store_id)
+
 	on, err := redis.Bool(conn.Do("SISMEMBER", key, seller_id))
 	if err != nil {
 		log.Error("sismember err:", err)

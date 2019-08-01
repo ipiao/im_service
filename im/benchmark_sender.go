@@ -19,13 +19,10 @@ var last int64
 var host string
 var port int
 
-
-
 const APP_ID = 7
 const APP_KEY = "sVDIlIiDUm7tWPYWhi6kfNbrqui3ez44"
 const APP_SECRET = "0WiCxAU1jh76SbgaaFC7qIaBPm2zkyM1"
 const URL = "http://192.168.33.10:5000"
-
 
 func init() {
 	flag.Int64Var(&first, "first", 0, "first uid")
@@ -48,7 +45,7 @@ func login(uid int64) string {
 
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", url, strings.NewReader(string(body)))
-	req.Header.Set("Authorization", "Basic " + basic)
+	req.Header.Set("Authorization", "Basic "+basic)
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	res, err := client.Do(req)
@@ -56,7 +53,7 @@ func login(uid int64) string {
 		return ""
 	}
 	defer res.Body.Close()
-	
+
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return ""
@@ -66,13 +63,12 @@ func login(uid int64) string {
 	return token
 }
 
-
 func send(uid int64) {
 	ip := net.ParseIP(host)
 	addr := net.TCPAddr{ip, port, ""}
 
 	token := login(uid)
-	
+
 	conn, err := net.DialTCP("tcp4", nil, &addr)
 	if err != nil {
 		log.Println("connect error")
@@ -80,8 +76,8 @@ func send(uid int64) {
 	}
 	seq := 1
 
-	auth := &AuthenticationToken{token:token, platform_id:1, device_id:"00000000"}
-	SendMessage(conn, &Message{cmd:MSG_AUTH_TOKEN, seq:seq, version:DEFAULT_VERSION, body:auth})	
+	auth := &AuthenticationToken{token: token, platform_id: 1, device_id: "00000000"}
+	SendMessage(conn, &Message{cmd: MSG_AUTH_TOKEN, seq: seq, version: DEFAULT_VERSION, body: auth})
 	ReceiveMessage(conn)
 
 	for i := 0; i < 18000; i++ {

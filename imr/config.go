@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,7 @@ import "log"
 import "github.com/richmonkey/cfg"
 
 type RouteConfig struct {
-	listen string
+	listen              string
 	mysqldb_datasource  string
 	redis_address       string
 	redis_password      string
@@ -56,7 +56,6 @@ func get_opt_int(app_cfg map[string]string, key string) int64 {
 	}
 	return n
 }
-
 
 func get_string(app_cfg map[string]string, key string) string {
 	concurrency, present := app_cfg[key]

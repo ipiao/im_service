@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,21 +18,21 @@
  */
 
 package main
+
 import "net"
 import log "github.com/golang/glog"
 
-
 type Push struct {
 	queue_name string
-	content []byte
+	content    []byte
 }
 
 type Client struct {
-	wt     chan *Message
-	
-	pwt     chan *Push
-	
-	conn   *net.TCPConn
+	wt chan *Message
+
+	pwt chan *Push
+
+	conn      *net.TCPConn
 	app_route *AppRoute
 }
 
@@ -121,16 +121,15 @@ func (client *Client) HandleUnsubscribe(id *AppUserID) {
 	route.RemoveUserID(id.uid)
 }
 
-
 func (client *Client) HandlePublishGroup(amsg *AppMessage) {
 	log.Infof("publish message appid:%d uid:%d msgid:%d cmd:%s", amsg.appid, amsg.receiver, amsg.msgid, Command(amsg.msg.cmd))
 	gid := amsg.receiver
 	group := group_manager.FindGroup(gid)
-	 
+
 	if group != nil && amsg.msg.cmd == MSG_GROUP_IM {
 		msg := amsg.msg
 		members := group.Members()
-		im := msg.body.(*IMMessage);
+		im := msg.body.(*IMMessage)
 		off_members := make([]int64, 0)
 		for uid, _ := range members {
 			if im.sender != uid && !IsUserOnline(amsg.appid, uid) {
@@ -150,8 +149,8 @@ func (client *Client) HandlePublishGroup(amsg *AppMessage) {
 	//群发给所有接入服务器
 	s := GetClientSet()
 
-	msg := &Message{cmd:MSG_PUBLISH_GROUP, body:amsg}
-	for c := range(s) {
+	msg := &Message{cmd: MSG_PUBLISH_GROUP, body: amsg}
+	for c := range s {
 		//不发送给自身
 		if client == c {
 			continue
@@ -160,21 +159,20 @@ func (client *Client) HandlePublishGroup(amsg *AppMessage) {
 	}
 }
 
-
 func (client *Client) HandlePublish(amsg *AppMessage) {
 	log.Infof("publish message appid:%d uid:%d msgid:%d cmd:%s", amsg.appid, amsg.receiver, amsg.msgid, Command(amsg.msg.cmd))
 
 	cmd := amsg.msg.cmd
-	receiver := &AppUserID{appid:amsg.appid, uid:amsg.receiver}
+	receiver := &AppUserID{appid: amsg.appid, uid: amsg.receiver}
 	s := FindClientSet(receiver)
 
 	offline := true
-	for c := range(s) {
+	for c := range s {
 		if c.IsAppUserOnline(receiver) {
 			offline = false
 		}
 	}
-	
+
 	if offline {
 		//用户不在线,推送消息到终端
 		if cmd == MSG_IM {
@@ -182,9 +180,9 @@ func (client *Client) HandlePublish(amsg *AppMessage) {
 		} else if cmd == MSG_GROUP_IM {
 			client.PublishGroupMessage(amsg.appid, []int64{amsg.receiver},
 				amsg.msg.body.(*IMMessage))
-		} else if cmd == MSG_CUSTOMER || 
+		} else if cmd == MSG_CUSTOMER ||
 			cmd == MSG_CUSTOMER_SUPPORT {
-			client.PublishCustomerMessage(amsg.appid, amsg.receiver, 
+			client.PublishCustomerMessage(amsg.appid, amsg.receiver,
 				amsg.msg.body.(*CustomerMessage), amsg.msg.cmd)
 		} else if cmd == MSG_SYSTEM {
 			sys := amsg.msg.body.(*SystemMessage)
@@ -194,17 +192,17 @@ func (client *Client) HandlePublish(amsg *AppMessage) {
 		}
 	}
 
-	if cmd == MSG_IM || cmd == MSG_GROUP_IM || 
-		cmd == MSG_CUSTOMER || cmd == MSG_CUSTOMER_SUPPORT || 
+	if cmd == MSG_IM || cmd == MSG_GROUP_IM ||
+		cmd == MSG_CUSTOMER || cmd == MSG_CUSTOMER_SUPPORT ||
 		cmd == MSG_SYSTEM {
-		if amsg.msg.flag & MESSAGE_FLAG_UNPERSISTENT == 0 {
+		if amsg.msg.flag&MESSAGE_FLAG_UNPERSISTENT == 0 {
 			//持久化的消息不主动推送消息到客户端
 			return
 		}
 	}
 
-	msg := &Message{cmd:MSG_PUBLISH, body:amsg}
-	for c := range(s) {
+	msg := &Message{cmd: MSG_PUBLISH, body: amsg}
+	for c := range s {
 		//不发送给自身
 		if client == c {
 			continue
@@ -227,11 +225,11 @@ func (client *Client) HandleUnsubscribeRoom(id *AppRoomID) {
 
 func (client *Client) HandlePublishRoom(amsg *AppMessage) {
 	log.Infof("publish room message appid:%d room id:%d cmd:%s", amsg.appid, amsg.receiver, Command(amsg.msg.cmd))
-	receiver := &AppRoomID{appid:amsg.appid, room_id:amsg.receiver}
+	receiver := &AppRoomID{appid: amsg.appid, room_id: amsg.receiver}
 	s := FindRoomClientSet(receiver)
 
-	msg := &Message{cmd:MSG_PUBLISH_ROOM, body:amsg}
-	for c := range(s) {
+	msg := &Message{cmd: MSG_PUBLISH_ROOM, body: amsg}
+	for c := range s {
 		//不发送给自身
 		if client == c {
 			continue
@@ -240,7 +238,6 @@ func (client *Client) HandlePublishRoom(amsg *AppMessage) {
 		c.wt <- msg
 	}
 }
-
 
 func (client *Client) Write() {
 	seq := 0
@@ -262,7 +259,6 @@ func (client *Client) Run() {
 	go client.Read()
 	go client.Push()
 }
-
 
 func (client *Client) read() *Message {
 	return ReceiveMessage(client.conn)

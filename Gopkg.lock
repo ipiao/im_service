@@ -65,14 +65,6 @@
   revision = "3c3145340e676971209507021a435520c2700d92"
 
 [[projects]]
-  digest = "1:ca59b1175189b3f0e9f1793d2c350114be36eaabbe5b9f554b35edee1de50aea"
-  name = "github.com/gorilla/mux"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "a7962380ca08b5a188038c69871b8d3fbdf31e89"
-  version = "v1.7.0"
-
-[[projects]]
   digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
   name = "github.com/gorilla/websocket"
   packages = ["."]
@@ -205,6 +197,7 @@
   ]
   pruneopts = "UT"
   revision = "2fdaae294f38ed9a121193c51ec99fecd3b13eb7"
+  source = "https://github.com/grpc/grpc-go.git"
   version = "v1.19.0"
 
 [solve-meta]
@@ -217,7 +210,6 @@
     "github.com/golang/protobuf/proto",
     "github.com/gomodule/redigo/redis",
     "github.com/googollee/go-engine.io",
-    "github.com/gorilla/mux",
     "github.com/gorilla/websocket",
     "github.com/importcjj/sensitive",
     "github.com/richmonkey/cfg",

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015, GoBelieve     
+ * Copyright (c) 2014-2015, GoBelieve
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,6 @@
 
 package main
 
-
 import "time"
 import "net"
 import log "github.com/golang/glog"
@@ -27,11 +26,10 @@ import "google.golang.org/grpc"
 import pb "github.com/GoBelieveIO/im_service/rpc"
 import "golang.org/x/net/context"
 
-
 //grpc
-type RPCServer struct {}
+type RPCServer struct{}
 
-func (s *RPCServer) PostGroupNotification(ctx context.Context, n *pb.GroupNotification) (*pb.Reply, error){
+func (s *RPCServer) PostGroupNotification(ctx context.Context, n *pb.GroupNotification) (*pb.Reply, error) {
 	members := NewIntSet()
 	for _, m := range n.Members {
 		members.Add(m)
@@ -68,7 +66,6 @@ func (s *RPCServer) PostPeerMessage(ctx context.Context, p *pb.PeerMessage) (*pb
 	return &pb.Reply{0}, nil
 }
 
-
 func (s *RPCServer) PostGroupMessage(ctx context.Context, p *pb.GroupMessage) (*pb.Reply, error) {
 	im := &IMMessage{}
 	im.sender = p.Sender
@@ -82,10 +79,9 @@ func (s *RPCServer) PostGroupMessage(ctx context.Context, p *pb.GroupMessage) (*
 	return &pb.Reply{0}, nil
 }
 
-
 func (s *RPCServer) PostSystemMessage(ctx context.Context, sm *pb.SystemMessage) (*pb.Reply, error) {
 	sys := &SystemMessage{string(sm.Content)}
-	msg := &Message{cmd:MSG_SYSTEM, body:sys}
+	msg := &Message{cmd: MSG_SYSTEM, body: sys}
 
 	msgid, err := SaveMessage(sm.Appid, sm.Uid, 0, msg)
 	if err != nil {
@@ -96,15 +92,13 @@ func (s *RPCServer) PostSystemMessage(ctx context.Context, sm *pb.SystemMessage)
 	PushMessage(sm.Appid, sm.Uid, msg)
 
 	//发送同步的通知消息
-	notify := &Message{cmd:MSG_SYNC_NOTIFY, body:&SyncKey{msgid}}
+	notify := &Message{cmd: MSG_SYNC_NOTIFY, body: &SyncKey{msgid}}
 	SendAppMessage(sm.Appid, sm.Uid, notify)
 
 	log.Info("post system message success")
 
 	return &pb.Reply{0}, nil
 }
-
-
 
 func (s *RPCServer) PostRealTimeMessage(ctx context.Context, rm *pb.RealTimeMessage) (*pb.Reply, error) {
 
@@ -113,12 +107,11 @@ func (s *RPCServer) PostRealTimeMessage(ctx context.Context, rm *pb.RealTimeMess
 	rt.receiver = rm.Receiver
 	rt.content = string(rm.Content)
 
-	msg := &Message{cmd:MSG_RT, body:rt}
+	msg := &Message{cmd: MSG_RT, body: rt}
 	SendAppMessage(rm.Appid, rm.Receiver, msg)
 	log.Info("post realtime message success")
 	return &pb.Reply{0}, nil
 }
-
 
 func (s *RPCServer) PostRoomMessage(ctx context.Context, rm *pb.RoomMessage) (*pb.Reply, error) {
 
@@ -127,21 +120,20 @@ func (s *RPCServer) PostRoomMessage(ctx context.Context, rm *pb.RoomMessage) (*p
 	room_im.receiver = rm.RoomId
 	room_im.content = string(rm.Content)
 
-	msg := &Message{cmd:MSG_ROOM_IM, body:room_im}
+	msg := &Message{cmd: MSG_ROOM_IM, body: room_im}
 	route := app_route.FindOrAddRoute(rm.Appid)
 	clients := route.FindRoomClientSet(rm.RoomId)
-	for c, _ := range(clients) {
+	for c, _ := range clients {
 		c.wt <- msg
 	}
 
-	amsg := &AppMessage{appid:rm.Appid, receiver:rm.RoomId, msg:msg}
+	amsg := &AppMessage{appid: rm.Appid, receiver: rm.RoomId, msg: msg}
 	channel := GetRoomChannel(rm.RoomId)
 	channel.PublishRoom(amsg)
 
 	log.Info("post room message success")
 	return &pb.Reply{0}, nil
 }
-
 
 func (s *RPCServer) PostCustomerMessage(ctx context.Context, cm *pb.CustomerMessage) (*pb.Reply, error) {
 
@@ -153,42 +145,40 @@ func (s *RPCServer) PostCustomerMessage(ctx context.Context, cm *pb.CustomerMess
 	c.content = cm.Content
 	c.timestamp = int32(time.Now().Unix())
 
-	m := &Message{cmd:MSG_CUSTOMER, body:c}
-
+	m := &Message{cmd: MSG_CUSTOMER, body: c}
 
 	msgid, err := SaveMessage(config.kefu_appid, cm.SellerId, 0, m)
- 	if err != nil {
+	if err != nil {
 		log.Warning("save message error:", err)
 		return &pb.Reply{1}, nil
 	}
 	msgid2, err := SaveMessage(cm.CustomerAppid, cm.CustomerId, 0, m)
- 	if err != nil {
+	if err != nil {
 		log.Warning("save message error:", err)
 		return &pb.Reply{1}, nil
 	}
-	
+
 	PushMessage(config.kefu_appid, cm.SellerId, m)
-	
+
 	//发送同步的通知消息
-	notify := &Message{cmd:MSG_SYNC_NOTIFY, body:&SyncKey{msgid}}
+	notify := &Message{cmd: MSG_SYNC_NOTIFY, body: &SyncKey{msgid}}
 	SendAppMessage(config.kefu_appid, cm.SellerId, notify)
 
 	//发送给自己的其它登录点
-	notify = &Message{cmd:MSG_SYNC_NOTIFY, body:&SyncKey{msgid2}}
+	notify = &Message{cmd: MSG_SYNC_NOTIFY, body: &SyncKey{msgid2}}
 	SendAppMessage(cm.CustomerAppid, cm.CustomerId, notify)
 
 	log.Info("post customer message success")
 	return &pb.Reply{0}, nil
 }
 
-
 func (s *RPCServer) GetNewCount(ctx context.Context, nc *pb.NewCountRequest) (*pb.NewCount, error) {
 	appid := nc.Appid
 	uid := nc.Uid
 
 	last_id := GetSyncKey(appid, uid)
-	sync_key := SyncHistory{AppID:appid, Uid:uid, LastMsgID:last_id}
-	
+	sync_key := SyncHistory{AppID: appid, Uid: uid, LastMsgID: last_id}
+
 	dc := GetStorageRPCClient(uid)
 
 	resp, err := dc.Call("GetNewCount", sync_key)
@@ -202,8 +192,6 @@ func (s *RPCServer) GetNewCount(ctx context.Context, nc *pb.NewCountRequest) (*p
 	log.Infof("get offline appid:%d uid:%d count:%d", appid, uid, count)
 	return &pb.NewCount{int32(count)}, nil
 }
-
-
 
 func (s *RPCServer) LoadLatestMessage(ctx context.Context, r *pb.LoadLatestRequest) (*pb.HistoryMessage, error) {
 	appid := r.Appid
@@ -281,12 +269,11 @@ func (s *RPCServer) LoadLatestMessage(ctx context.Context, r *pb.LoadLatestReque
 	return hm, nil
 }
 
-
 func (s *RPCServer) LoadHistoryMessage(ctx context.Context, r *pb.LoadHistoryRequest) (*pb.HistoryMessage, error) {
 	appid := r.Appid
 	uid := r.Uid
 	msgid := r.LastId
-	
+
 	storage_pool := GetStorageConnPool(uid)
 	storage, err := storage_pool.Get()
 	if err != nil {
@@ -313,7 +300,6 @@ func (s *RPCServer) LoadHistoryMessage(ctx context.Context, r *pb.LoadHistoryReq
 
 	hm := &pb.HistoryMessage{}
 	hm.Messages = make([]*pb.Message, 0)
-
 
 	for _, emsg := range messages {
 		if emsg.msg.cmd == MSG_IM {
@@ -358,8 +344,6 @@ func (s *RPCServer) LoadHistoryMessage(ctx context.Context, r *pb.LoadHistoryReq
 	log.Info("load latest message success")
 	return hm, nil
 }
-
-
 
 func StartRPCServer(addr string) {
 	go func() {
