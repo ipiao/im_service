@@ -96,3 +96,6 @@ func GetNewCountInterface(addr string, s *SyncHistory) (int64, error) {
 func GetLatestMessageInterface(addr string, r *HistoryRequest) []*HistoryMessage {
 	return nil
 }
+
+// RPC接口声明,供内部服务间使用的用gorpc
+// im中使用了grpc,是暴露给外部服务调用的

@@ -3,11 +3,10 @@ package main
 import "sync"
 import log "github.com/golang/glog"
 
-
 type Route struct {
-	appid  int64
-	mutex   sync.Mutex
-	clients map[int64]ClientSet
+	appid        int64
+	mutex        sync.Mutex
+	clients      map[int64]ClientSet
 	room_clients map[int64]ClientSet
 }
 
@@ -22,7 +21,7 @@ func NewRoute(appid int64) *Route {
 func (route *Route) AddRoomClient(room_id int64, client *Client) {
 	route.mutex.Lock()
 	defer route.mutex.Unlock()
-	set, ok := route.room_clients[room_id]; 
+	set, ok := route.room_clients[room_id]
 	if !ok {
 		set = NewClientSet()
 		route.room_clients[room_id] = set
@@ -60,7 +59,7 @@ func (route *Route) RemoveRoomClient(room_id int64, client *Client) bool {
 func (route *Route) AddClient(client *Client) {
 	route.mutex.Lock()
 	defer route.mutex.Unlock()
-	set, ok := route.clients[client.uid]; 
+	set, ok := route.clients[client.uid]
 	if !ok {
 		set = NewClientSet()
 		route.clients[client.uid] = set
@@ -104,7 +103,6 @@ func (route *Route) IsOnline(uid int64) bool {
 	}
 	return false
 }
-
 
 func (route *Route) GetUserIDs() IntSet {
 	return NewIntSet()

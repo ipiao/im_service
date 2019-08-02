@@ -61,6 +61,7 @@ func (app_route *AppRoute) GetUsers() map[int64]IntSet {
 
 	r := make(map[int64]IntSet)
 	for appid, route := range app_route.apps {
+		// 目前这里的实现就是返回空
 		uids := route.GetUserIDs()
 		r[appid] = uids
 	}
@@ -95,6 +96,7 @@ func (set ClientSet) Count() int {
 	return len(set)
 }
 
+// 只是浅复制
 func (set ClientSet) Clone() ClientSet {
 	n := make(map[*Client]struct{})
 	for k, v := range set {
@@ -102,3 +104,13 @@ func (set ClientSet) Clone() ClientSet {
 	}
 	return n
 }
+
+// APP Route
+// im_service 可以作为通用的聊天服务
+// "不同的"app用户可以共用一个服务,用户除了与客服通信外,不同的用户间是"隔离"的
+// 在根包下的文件都是在三个服务中共享的文件,也就是至少有两个服务共用一套代码,为了服务间的隔离,在公共区域列出,并在各服区间cv
+// 在im和imr中共用
+// (好吧,从我的注释来看,这里就是软链接)
+// 所以app_route的主要作用是,区分和查找不同的app
+
+// 附带的ClientSet就是个hashSet

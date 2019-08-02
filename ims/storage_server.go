@@ -199,7 +199,7 @@ func main() {
 		fmt.Println("usage: ims config")
 		return
 	}
-
+	// 解析第一个参数为配置文件路径
 	config = read_storage_cfg(flag.Args()[0])
 	log.Infof("rpc listen:%s storage root:%s sync listen:%s master address:%s is push system:%t group limit:%d offline message limit:%d hard limit:%d\n",
 		config.rpc_listen, config.storage_root, config.sync_listen,
@@ -211,29 +211,39 @@ func main() {
 		log.Error("config limit is 0")
 		return
 	}
+	// 因为点对点的消息存储是存2份的,所以从设计上就要求总存储消息数至少是2倍
 	if config.hard_limit > 0 && config.hard_limit/config.limit < 2 {
 		log.Errorf("config limit:%d, hard limit:%d invalid, hard limit/limit must gte 2", config.limit, config.hard_limit)
 		return
 	}
-
+	// 直接的文件存储,文件数据库
 	storage = NewStorage(config.storage_root)
 
+	// 数据库,主从节点
+	// 首先自己作为主库,每60s或者达到1000条消息向从库同步一次
 	master = NewMaster()
 	master.Start()
+
+	// 如果配置了主数据库地址,则作为其从库,监听同步消息
 	if len(config.master_address) > 0 {
 		slaver := NewSlaver(config.master_address)
 		slaver.Start()
 	}
 
-	//刷新storage file
+	// 刷新storage file
 	go FlushLoop()
+	// 刷新索引文件
 	go FlushIndexLoop()
+	// 监听服务终止信号
 	go waitSignal()
 
 	if len(config.http_listen_address) > 0 {
+		// 开启http接口
 		go StartHttpServer(config.http_listen_address)
 	}
 
+	// 作为主库,要起一个跟从库通信的服务,进行同步通信
 	go ListenSyncClient()
+	// 开启给其他服务调用的RPC服务
 	ListenRPCClient()
 }

@@ -24,9 +24,13 @@ import "sync"
 import "time"
 import log "github.com/golang/glog"
 
+// 每次同步打包消息大小
+const SYNC_BATCH_SIZE = 1000
+
+// 同步客户端,分配给从库(从库作为主库的客户端)
 type SyncClient struct {
 	conn *net.TCPConn
-	ewt  chan *Message
+	ewt  chan *Message // 主库下发的消息
 }
 
 func NewSyncClient(conn *net.TCPConn) *SyncClient {
@@ -36,8 +40,10 @@ func NewSyncClient(conn *net.TCPConn) *SyncClient {
 	return c
 }
 
+// 从库客户端的运行处理
 func (client *SyncClient) RunLoop() {
 	seq := 0
+	// 在规定的期限内,第一次必须收到从服务器发来`MSG_STORAGE_SYNC_BEGIN的`消息
 	msg := ReceiveMessage(client.conn)
 	if msg == nil {
 		return
@@ -46,27 +52,31 @@ func (client *SyncClient) RunLoop() {
 		return
 	}
 
+	// 第一条消息的body是个cursor,记录了从服务器的需要同步的消息id,详细键Slaver.RunOnce
 	cursor := msg.body.(*SyncCursor)
 	log.Info("cursor msgid:", cursor.msgid)
 	c := storage.LoadSyncMessagesInBackground(cursor.msgid)
-
+	// 将自cursor之后的消息发送同步给从库
+	// 第一次是一条一条发过去,避免打包发送包太大
 	for batch := range c {
 		msg := &Message{cmd: MSG_STORAGE_SYNC_MESSAGE_BATCH, body: batch}
 		seq = seq + 1
 		msg.seq = seq
 		SendMessage(client.conn, msg)
 	}
-
+	// 添加从库记录
 	master.AddClient(client)
 	defer master.RemoveClient(client)
 
+	// 循环等待处理主服务器新消息
 	for {
 		msg := <-client.ewt
+		// 是nil是服务器主动关闭
 		if msg == nil {
 			log.Warning("chan closed")
 			break
 		}
-
+		// 否则就是需要同步给客户端的消息
 		seq = seq + 1
 		msg.seq = seq
 		err := SendMessage(client.conn, msg)
@@ -116,12 +126,14 @@ func (master *Master) CloneClientSet() map[*SyncClient]struct{} {
 	return clone
 }
 
+// 消息打包下发
 func (master *Master) SendBatch(cache []*EMessage) {
 	if len(cache) == 0 {
 		return
 	}
 
-	batch := &MessageBatch{msgs: make([]*Message, 0, 1000)}
+	// 因为主库cache是1000,所以初始化容量1000
+	batch := &MessageBatch{msgs: make([]*Message, 0, SYNC_BATCH_SIZE)}
 	batch.first_id = cache[0].msgid
 	for _, em := range cache {
 		batch.last_id = em.msgid
@@ -134,10 +146,13 @@ func (master *Master) SendBatch(cache []*EMessage) {
 	}
 }
 
+// 主库运行
 func (master *Master) Run() {
-	cache := make([]*EMessage, 0, 1000)
+	cache := make([]*EMessage, 0, SYNC_BATCH_SIZE)
 	var first_ts time.Time
 	for {
+		// 消息至多每秒同步一次
+		// 然后每次阻塞不超过60秒(这似乎没什么意义)
 		t := 60 * time.Second
 		if len(cache) > 0 {
 			ts := first_ts.Add(time.Second * 1)
@@ -156,7 +171,7 @@ func (master *Master) Run() {
 			if len(cache) == 1 {
 				first_ts = time.Now()
 			}
-			if len(cache) >= 1000 {
+			if len(cache) >= SYNC_BATCH_SIZE {
 				master.SendBatch(cache)
 				cache = cache[0:0]
 			}
@@ -174,7 +189,7 @@ func (master *Master) Start() {
 }
 
 type Slaver struct {
-	addr string
+	addr string // 这是对应主库的地址
 }
 
 func NewSlaver(addr string) *Slaver {
@@ -183,30 +198,35 @@ func NewSlaver(addr string) *Slaver {
 	return s
 }
 
+// 从库运行
 func (slaver *Slaver) RunOnce(conn *net.TCPConn) {
 	defer conn.Close()
 
+	// 这个seq目前没什么用途,单纯的记录
 	seq := 0
 
 	msgid := storage.NextMessageID()
 	cursor := &SyncCursor{msgid}
 	log.Info("cursor msgid:", msgid)
-
+	// 首先发送开始标志给主库,随后主库会将同步msgid至当前的消息发送过来
 	msg := &Message{cmd: MSG_STORAGE_SYNC_BEGIN, body: cursor}
 	seq += 1
 	msg.seq = seq
 	SendMessage(conn, msg)
 
 	for {
+		// 收到主库的消息,消息大小限制32M,也就是最大如果1000条发来,平均每条32k
+		// 出错了就会创建新连接,继续同步
 		msg := ReceiveStorageSyncMessage(conn)
 		if msg == nil {
 			return
 		}
-
+		// 一开始同步的单条消息
 		if msg.cmd == MSG_STORAGE_SYNC_MESSAGE {
 			emsg := msg.body.(*EMessage)
 			storage.SaveSyncMessage(emsg)
 		} else if msg.cmd == MSG_STORAGE_SYNC_MESSAGE_BATCH {
+			// 打包消息
 			mb := msg.body.(*MessageBatch)
 			storage.SaveSyncMessageBatch(mb)
 		} else {
@@ -219,6 +239,7 @@ func (slaver *Slaver) Run() {
 	nsleep := 100
 	for {
 		conn, err := net.Dial("tcp", slaver.addr)
+		// 如果连接错误,一直重连知道连上为止
 		if err != nil {
 			log.Info("connect master server error:", err)
 			nsleep *= 2

@@ -29,11 +29,11 @@ import log "github.com/golang/glog"
 
 type GroupID struct {
 	appid int64
-	gid   int64
+	gid   int64 // 这个应该是数据库id
 }
 
 type GroupStorage struct {
-	*StorageFile
+	*StorageFile // 文件存储
 
 	message_index map[GroupID]int64 //记录每个群组最近的消息ID
 }
